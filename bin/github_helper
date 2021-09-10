@@ -1,0 +1,130 @@
+#!/bin/bash
+# This script is to automate inserting username and github token to a github repo
+# Only run this script inside a github repo
+
+# Define functions
+new_token () {
+    # Get username
+    if ! [[ -z $1 ]]; then
+        username=$1
+    else
+        read -p "New username: " username
+    fi
+    # Get token
+    read -p "New token: " token
+    # Edit config file
+    SUCCESS_TEXT="Successfully edit repository config!"
+    FAILED_TEST="Failed to edit repository config!"
+    # Check if url already have username and token
+    if grep -q "//.*:.*@" ./.git/config; then
+        if sed -i -E "s/\/\/.*:.*@/\/\/$username:$token@/g" ./.git/config; then
+            echo $SUCCESS_TEXT
+        else
+            echo $FAILED_TEXT
+            exit 4
+        fi
+    elif grep -q "https://github.com" ./.git/config; then
+        if sed -i -E "s/:\/\/g/:\/\/$username:$token@g/g" .git/config; then
+            echo $SUCCESS_TEXT
+        else
+            echo $FAILED_TEXT
+            exit 4
+        fi
+    fi
+}
+
+token_add () {
+    # Check for existing url
+    # Check if existing url contain username and token
+    if grep -q "//.*:.*@" ./.git/config; then
+        # Get previous username and token
+        match_word=$(grep -o "//.*:.*@" ./.git/config)
+        match_word=${match_word:2:-1}
+        arrMW=(${match_word//:/ })
+        read -p "Previous username (${arrMW[0]}) and token found in url! Replace them? [yY/nN]: " confirm
+        if [[ $confirm == [yY] ]]; then
+            read -p "Retain previous username? [yY/nN]: " confirm
+            # Fetch username
+            if [[ $confirm == [yY] ]]; then
+                username=${arrMW[0]}
+            elif [[ $confirm == [nN] ]]; then
+                read -p "New username: " username
+            else
+                exit 3
+            fi
+            # Call new_token function
+            new_token $username
+        elif ! [[ $confirm == [nN] ]]; then
+            exit 3
+        fi
+    # Check if existing url is valid github url
+    elif grep -q "https://github.com" ./.git/config; then
+        read -p "Add token to origin url? [yY/nN]: " confirm
+        if [[ $confirm == [yY] ]]; then
+            new_token
+        fi
+    else
+        echo "No URL found inside git repository config file!"
+    fi
+}
+
+token_remove () {
+    # Check for existing url
+    # Check if existing url contain username and token
+    if grep -q "//.*:.*@" ./.git/config; then
+        if sed -i -E "s/\/\/.*:.*@/\/\//g" ./.git/config; then
+            echo "Successfully remove username and token from origin url!"
+        else
+            echo "Failed removing username and token from origin url!"
+            exit 4
+        fi
+    else
+        echo "Nothing to remove!"
+    fi
+}
+
+token_action () {
+    if [[ -z $1 ]]; then
+        echo "Please supply token action argument (second argument)! Valid action: [add/remove]"
+        exit 2
+    fi
+    case $1 in
+        add)
+            token_add
+            ;;
+        remove)
+            token_remove
+            ;;
+        *)
+            echo "Invalid token action argument (second argument)! Valid action: [add/remove]"
+            ;;
+    esac
+}
+
+# Ensure that .git folder exist on same directory
+MISSING_TEST="Ensure that this script is run inside an actual git repository folder!"
+if ! [[ -d ./.git ]]; then
+    echo $MISSING_TEST
+    exit 1
+elif ! [[ -f ./.git/config ]]; then
+    echo $MISSING_TEXT
+    exit 1
+fi
+
+# Check first argument passthrough the script
+if [[ -z $1 ]]; then
+    echo "Action argument (first argument) not supplied!"
+    exit 2
+fi
+
+# Check if action argument is valid
+case $1 in
+    token)
+        token_action $2
+        ;;
+    *)
+        echo "Invalid action argument (first argument)!"
+        exit 3
+        ;;
+esac
+
