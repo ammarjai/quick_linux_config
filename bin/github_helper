@@ -11,7 +11,7 @@ new_token () {
         read -p "New username: " username
     fi
     # Get token
-    read -p "New token: " token
+    read -s -p "New token: " token
     # Edit config file
     SUCCESS_TEXT="Successfully edit repository config!"
     FAILED_TEST="Failed to edit repository config!"
