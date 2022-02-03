@@ -14,7 +14,7 @@ new_token () {
     read -s -p "New token: " token
     # Edit config file
     SUCCESS_TEXT="Successfully edit repository config!"
-    FAILED_TEST="Failed to edit repository config!"
+    FAILED_TEXT="Failed to edit repository config!"
     # Check if url already have username and token
     if grep -q "//.*:.*@" ./.git/config; then
         if sed -i -E "s/\/\/.*:.*@/\/\/$username:$token@/g" ./.git/config; then
@@ -102,9 +102,9 @@ token_action () {
 }
 
 # Ensure that .git folder exist on same directory
-MISSING_TEST="Ensure that this script is run inside an actual git repository folder!"
+MISSING_TEXT="Ensure that this script is run inside an actual git repository folder!"
 if ! [[ -d ./.git ]]; then
-    echo $MISSING_TEST
+    echo $MISSING_TEXT
     exit 1
 elif ! [[ -f ./.git/config ]]; then
     echo $MISSING_TEXT
